@@ -70,7 +70,7 @@ class Host:
                 msg = i.recv()
                 if len(msg.decode().split(" ")) == 1:
                     msg = i.recv()
-                return msg
+                yield msg
 
     def read(self, msg):
         recv_time, recv_id, msg = msg.split(" ", maxsplit=2)
