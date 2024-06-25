@@ -64,7 +64,7 @@ class Host:
         self.pub_socket.send(send_msg.encode())
 
     def recv(self):
-        polled_socks = dict(self.poller.poll())
+        polled_socks = dict(self.poller.poll(1000))
         for i in [self.sub_socket, self.peer_recv_socket]:
             if polled_socks.get(i) == zmq.POLLIN:
                 msg = i.recv()

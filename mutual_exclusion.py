@@ -9,7 +9,6 @@ class ExclusionModule:
         self.oks_received = 0
 
     def send(self, send_id, msg):
-        print("Sending message: %s" % msg)
         self.host.send(send_id, "resource", msg)
 
     def broadcast(self, msg):
@@ -36,22 +35,19 @@ class ExclusionModule:
         elif msg == "OK":
             if self.sent_request:
                 self.oks_received += 1
-                if self.oks_received >= 1: # TODO Use actual number of peers
+                if self.oks_received >= 7:
                     self.has_resource = True
                     self.sent_request = False
 
     def broadcast_if_necessary(self):
-        if not self.sent_request:
-            # broadcast request and wait if you want to obtain the resource
-            if self.wants_resource and not self.has_resource:
-                self.host.broadcast("resource", "request")
-                self.last_host_request_time = self.host.time
-                self.sent_request = True
+        # broadcast request and wait if you want to obtain the resource
+        if not self.sent_request and self.wants_resource and not self.has_resource:
+            self.host.broadcast("resource", "request")
+            self.last_host_request_time = self.host.time
+            self.sent_request = True
 
     def release(self):
         self.has_resource = False
-        print("Released resource")
         for i in self.request_queue:
-            print(i)
             self.send(i, "OK")
         self.oks_received = 0

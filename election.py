@@ -1,4 +1,6 @@
-timeout = 5
+import time
+
+timeout = 1
 
 
 class ElectionModule:
@@ -7,9 +9,9 @@ class ElectionModule:
         self.leader = None
         self.waiting_for_coordinator = False
         self.sent_request = False
+        self.request_time = None
 
     def send(self, send_id, msg):
-        print("Sending message: %s" % msg)
         self.host.send(send_id, "leader", msg)
 
     def broadcast(self, msg):
@@ -25,24 +27,25 @@ class ElectionModule:
             assert self.host.host_id < recv_id
             self.waiting_for_coordinator = True
         elif msg == "COORDINATOR":
-            print(self.host.host_id, "is now the leader.")
             self.leader = recv_id
             self.waiting_for_coordinator = False
             self.sent_request = False
 
     def begin_election(self):
         self.host.broadcast("leader", "ELECTION")
-        self.request_time = self.host.time
+        self.request_time = time.time() # Local time is fine since this will only be used for timeout
         self.sent_request = True
 
     def broadcast_if_necessary(self):
         if not self.sent_request:
             if self.leader is None:
                 self.begin_election()
-        elif not self.waiting_for_coordinator and self.host.time > self.request_time + timeout:
+        elif (not self.waiting_for_coordinator
+              and time.time() > self.request_time + timeout):
             # If not waiting for a higher process to be a coordinator and
             # you didn't receive any OK, then announce to everyone you are the leader
             self.host.broadcast("leader", "COORDINATOR")
             self.sent_request = False
             self.detected_leader_is_dead = False
             self.leader = self.host.host_id
+            self.request_time = None
