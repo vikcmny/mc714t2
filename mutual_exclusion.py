@@ -7,6 +7,7 @@ class ExclusionModule:
         self.sent_request = False
         self.request_queue = []
         self.oks_received = 0
+        self.ok_tracker = [0] * 8
 
     def send(self, send_id, msg):
         self.host.send(send_id, "resource", msg)
@@ -19,9 +20,9 @@ class ExclusionModule:
 
     def recv(self, msg):
         recv_time, recv_id, msg = self.host.read(msg)
+        self.host.connect_to_id(recv_id)
         if msg == "request":
             if not self.wants_resource and not self.has_resource:
-                self.host.connect_to_id(recv_id)
                 self.send(recv_id, "OK")
             elif self.has_resource:
                 self.queue_request(recv_id)
@@ -34,6 +35,7 @@ class ExclusionModule:
                     self.queue_request(recv_id)
         elif msg == "OK":
             if self.sent_request:
+                self.ok_tracker[recv_id] += 1
                 self.oks_received += 1
                 if self.oks_received >= 7:
                     self.has_resource = True
@@ -47,7 +49,9 @@ class ExclusionModule:
             self.sent_request = True
 
     def release(self):
+        self.ok_tracker = [0] * 8
         self.has_resource = False
         for i in self.request_queue:
             self.send(i, "OK")
+        self.request_queue = []
         self.oks_received = 0
